@@ -1,0 +1,58 @@
+services:
+  whatsapp-bridge:
+    build:
+      context: .
+      dockerfile: Dockerfile.bridge
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - ./store:/app/whatsapp-bridge/store
+    environment:
+      - TZ=UTC
+      - DISABLE_AUTH_CHECK=true
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/api/health"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - whatsapp-net
+
+  whatsapp-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp
+    ports:
+      - "127.0.0.1:8081:8081"  # MCP SSE transport
+      - "127.0.0.1:8082:8082"  # Gradio UI
+    volumes:
+      - ./store:/app/store
+    environment:
+      - TZ=UTC
+      - DEBUG=true
+      - GRADIO=false
+      - BRIDGE_HOST=whatsapp-bridge
+    depends_on:
+      whatsapp-bridge:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - whatsapp-net
+
+  web-ui:
+    build:
+      context: .
+      dockerfile: Dockerfile.web-ui
+    ports:
+      - "127.0.0.1:8090:8080"  # Web UI (pairing + webhooks)
+    depends_on:
+      - whatsapp-bridge
+    restart: unless-stopped
+    networks:
+      - whatsapp-net
+
+networks:
+  whatsapp-net:
+    driver: bridge

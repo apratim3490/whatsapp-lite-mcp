@@ -26,29 +26,12 @@ services:
       dockerfile: Dockerfile.mcp
     ports:
       - "127.0.0.1:8081:8081"  # MCP SSE transport
-      - "127.0.0.1:8082:8082"  # Gradio UI
-    volumes:
-      - ./store:/app/store
     environment:
       - TZ=UTC
-      - DEBUG=true
-      - GRADIO=false
       - BRIDGE_HOST=whatsapp-bridge
     depends_on:
       whatsapp-bridge:
         condition: service_healthy
-    restart: unless-stopped
-    networks:
-      - whatsapp-net
-
-  web-ui:
-    build:
-      context: .
-      dockerfile: Dockerfile.web-ui
-    ports:
-      - "127.0.0.1:8090:8080"  # Web UI (pairing + webhooks)
-    depends_on:
-      - whatsapp-bridge
     restart: unless-stopped
     networks:
       - whatsapp-net

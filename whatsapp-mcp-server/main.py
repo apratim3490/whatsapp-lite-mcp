@@ -6,7 +6,7 @@ from mcp.server.fastmcp import FastMCP
 from whatsapp import send_file as whatsapp_send_file
 from whatsapp import send_message as whatsapp_send_message
 
-mcp = FastMCP("whatsapp")
+mcp = FastMCP("whatsapp", host="0.0.0.0", port=8081)
 
 
 @mcp.tool()
@@ -40,4 +40,4 @@ def send_file(recipient: str, media_path: str) -> dict[str, Any]:
 
 
 if __name__ == "__main__":
-    mcp.run(transport='stdio')
+    mcp.run(transport='sse')

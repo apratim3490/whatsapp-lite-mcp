@@ -1,53 +1,50 @@
 #!/bin/bash
 # ============================================================
-# WhatsApp MCP Server — Docker Setup
-# One-shot script to build, start, and configure everything.
+# WhatsApp MCP Server — First-Time Setup
+# Builds containers, starts services, and configures Claude.
+# For subsequent starts, use ./start.sh instead.
 # ============================================================
 set -e
 
 INSTALL_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 echo "=========================================="
-echo "  WhatsApp MCP Server — Docker Setup"
+echo "  WhatsApp MCP Server — Setup"
 echo "=========================================="
 echo ""
 
 # ----------------------------------------------------------
 # Step 1: Check prerequisites
 # ----------------------------------------------------------
-echo "[1/4] Checking prerequisites..."
+echo "[1/3] Checking prerequisites..."
 
-if ! command -v docker &> /dev/null; then
-    echo "  ERROR: Docker is not installed."
-    echo "  Install Docker Desktop from: https://www.docker.com/products/docker-desktop/"
+if command -v podman &>/dev/null; then
+    echo "  Podman $(podman --version | awk '{print $NF}')"
+    if ! command -v podman-compose &>/dev/null; then
+        echo "  Installing podman-compose..."
+        pip3 install podman-compose
+    fi
+elif command -v docker &>/dev/null && docker info &>/dev/null 2>&1; then
+    echo "  Docker $(docker --version | awk '{print $3}' | tr -d ',')"
+else
+    echo "  ERROR: No container runtime found."
+    echo "  Install Podman:  brew install podman && pip3 install podman-compose"
     exit 1
 fi
-echo "  Docker $(docker --version | awk '{print $3}' | tr -d ',')"
-
-if ! docker info &> /dev/null 2>&1; then
-    echo "  ERROR: Docker daemon is not running. Start Docker Desktop and try again."
-    exit 1
-fi
-echo "  Docker daemon is running"
 echo ""
 
 # ----------------------------------------------------------
-# Step 2: Build and start containers
+# Step 2: Build and start services
 # ----------------------------------------------------------
-echo "[2/4] Building and starting containers..."
-echo "  (first build may take a few minutes)"
+echo "[2/3] Building and starting services..."
 echo ""
-cd "$INSTALL_DIR"
-docker compose build
-docker compose up -d
-echo ""
-echo "  Containers started"
+"$INSTALL_DIR/start.sh"
 echo ""
 
 # ----------------------------------------------------------
 # Step 3: Configure Claude Desktop (if on macOS)
 # ----------------------------------------------------------
-echo "[3/4] Claude Desktop configuration..."
+echo "[3/3] Claude Desktop configuration..."
 
 CLAUDE_CONFIG_FILE="$HOME/Library/Application Support/Claude/claude_desktop_config.json"
 
@@ -74,28 +71,7 @@ EOF
     echo "  Claude Desktop config created"
 fi
 echo ""
-
-# ----------------------------------------------------------
-# Step 4: Show QR code instructions
-# ----------------------------------------------------------
-echo "[4/4] Link your WhatsApp account..."
-echo ""
-echo "  Run this to see the QR code:"
-echo ""
-echo "    docker compose logs -f whatsapp-bridge"
-echo ""
-echo "  Then on your phone:"
-echo "    WhatsApp -> Settings -> Linked Devices -> Link a Device"
-echo ""
 echo "=========================================="
 echo "  Setup complete!"
 echo "=========================================="
-echo ""
-echo "  Useful commands:"
-echo ""
-echo "    docker compose logs -f whatsapp-bridge   # QR code / bridge logs"
-echo "    docker compose logs -f whatsapp-mcp      # MCP server logs"
-echo "    docker compose ps                        # container status"
-echo "    docker compose down                      # stop everything"
-echo "    docker compose restart                   # restart services"
 echo ""

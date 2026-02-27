@@ -1,6 +1,6 @@
 # WhatsApp MCP (Send-Only)
 
-A Dockerized [Model Context Protocol](https://modelcontextprotocol.io/) server that lets Claude Desktop send WhatsApp messages. **Send-only by design** — no ability to read messages, list chats, or access conversation history.
+A containerized [Model Context Protocol](https://modelcontextprotocol.io/) server that lets Claude send WhatsApp messages. **Send-only by design** — no ability to read messages, list chats, or access conversation history.
 
 Based on [FelixIsaac/whatsapp-mcp-extended](https://github.com/FelixIsaac/whatsapp-mcp-extended), stripped down to two tools.
 
@@ -10,35 +10,44 @@ Based on [FelixIsaac/whatsapp-mcp-extended](https://github.com/FelixIsaac/whatsa
 ┌─────────────────────┐     ┌─────────────────────┐
 │   whatsapp-bridge   │     │   whatsapp-mcp      │
 │   (Go + whatsmeow)  │◄────│   (Python + MCP)    │
-│   Port: 8080        │     │   Port: 8081        │
+│   Internal: 8080    │     │   Port: 8081        │
+│   (docker-only)     │     │   (host-exposed)    │
 └─────────────────────┘     └─────────────────────┘
 ```
+
+**Security layers:**
+- The Go bridge is **not exposed to the host** — only reachable within the Docker network
+- Only 2 API routes are registered: `/api/health` and `/api/send` (37 others stripped)
+- The MCP server exposes only `send_message` and `send_file` tools via SSE on port 8081
 
 ## Quick Start
 
 ### Prerequisites
 
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running
+- **Podman** (recommended, open source): `brew install podman && pip3 install podman-compose`
+- Or **Docker** with Docker Compose
 
 ### Setup
 
 ```bash
-git clone https://github.com/<your-username>/whatsapp-mcp.git
-cd whatsapp-mcp
+git clone https://github.com/apratim3490/whatsapp-lite-mcp.git
+cd whatsapp-lite-mcp
 ./setup.sh
 ```
 
-Or manually:
+Or for subsequent starts:
 
 ```bash
-docker compose build
-docker compose up -d
-
-# Scan the QR code to link your WhatsApp account
-docker compose logs -f whatsapp-bridge
+./start.sh
 ```
 
-Then on your phone: **WhatsApp > Settings > Linked Devices > Link a Device**
+Then scan the QR code to link your WhatsApp account:
+
+```bash
+podman logs -f whatsapp-mcp_whatsapp-bridge_1
+```
+
+On your phone: **WhatsApp > Settings > Linked Devices > Link a Device**
 
 ### Connect to Claude Desktop
 
@@ -54,7 +63,19 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 }
 ```
 
-Restart Claude Desktop.
+### Connect to Claude Code
+
+Add to `~/.claude.json`:
+
+```json
+{
+  "mcpServers": {
+    "whatsapp": {
+      "url": "http://localhost:8081/sse"
+    }
+  }
+}
+```
 
 ## Tools
 
@@ -68,12 +89,13 @@ That's it. No read access, no chat listing, no contact search, no group manageme
 ## Useful Commands
 
 ```bash
-docker compose logs -f whatsapp-bridge   # QR code / bridge logs
-docker compose logs -f whatsapp-mcp      # MCP server logs
-docker compose ps                        # container status
-docker compose down                      # stop everything
-docker compose restart                   # restart services
+podman-compose logs -f whatsapp-bridge   # QR code / bridge logs
+podman-compose logs -f whatsapp-mcp      # MCP server logs
+podman-compose ps                        # container status
+podman-compose down                      # stop everything
 ```
+
+Replace `podman-compose` with `docker compose` if using Docker.
 
 ## Troubleshooting
 
@@ -84,14 +106,14 @@ cd whatsapp-bridge
 go get -u go.mau.fi/whatsmeow@latest
 go mod tidy
 cd ..
-docker compose build whatsapp-bridge
-docker compose up -d whatsapp-bridge
+podman-compose build whatsapp-bridge
+podman-compose up -d whatsapp-bridge
 ```
 
 ### QR Code Not Appearing
 
 ```bash
-docker compose logs -f whatsapp-bridge
+podman logs -f whatsapp-mcp_whatsapp-bridge_1
 ```
 
 ## Credits

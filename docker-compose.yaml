@@ -3,8 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.bridge
-    ports:
-      - "127.0.0.1:8080:8080"
+    # No host port — bridge only reachable within whatsapp-net
     volumes:
       - ./store:/app/whatsapp-bridge/store
     environment:
@@ -30,8 +29,7 @@ services:
       - TZ=UTC
       - BRIDGE_HOST=whatsapp-bridge
     depends_on:
-      whatsapp-bridge:
-        condition: service_healthy
+      - whatsapp-bridge
     restart: unless-stopped
     networks:
       - whatsapp-net

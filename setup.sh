@@ -55,7 +55,8 @@ if [ -f "$CLAUDE_CONFIG_FILE" ]; then
     echo "  Add this to your \"mcpServers\" section:"
     echo ""
     echo '    "whatsapp": {'
-    echo '      "url": "http://localhost:8081/sse"'
+    echo '      "command": "uvx",'
+    echo '      "args": ["mcp-proxy", "http://127.0.0.1:8081/sse"]'
     echo '    }'
 else
     mkdir -p "$(dirname "$CLAUDE_CONFIG_FILE")"
@@ -63,7 +64,8 @@ else
 {
   "mcpServers": {
     "whatsapp": {
-      "url": "http://localhost:8081/sse"
+      "command": "uvx",
+      "args": ["mcp-proxy", "http://127.0.0.1:8081/sse"]
     }
   }
 }
